@@ -1,212 +1,157 @@
-import "@fontsource-variable/bricolage-grotesque";
-import "@fontsource/atkinson-hyperlegible/latin-400.css";
-import "@fontsource/atkinson-hyperlegible/latin-700.css";
-import "@fontsource/kalam/latin-400.css";
-import "@fontsource/kalam/latin-700.css";
+import "@fontsource-variable/schibsted-grotesk";
+import "@fontsource-variable/source-serif-4";
+import "@fontsource-variable/source-serif-4/opsz-italic.css";
+import "@fontsource/mrs-saint-delafield/latin-400.css";
 import "./style.css";
 
 const root = document.documentElement;
-const reduceQuery = matchMedia("(prefers-reduced-motion: reduce)");
-const reduced = reduceQuery.matches;
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (!reduced) root.classList.add("motion");
 
 const $ = (sel, el = document) => el.querySelector(sel);
 const $$ = (sel, el = document) => [...el.querySelectorAll(sel)];
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
-const OUT = "cubic-bezier(0.16, 1, 0.3, 1)";
+const EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function onceInView(el, fn, opts = { threshold: 0.35 }) {
-  const io = new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      if (e.isIntersecting) {
+function onceInView(el, fn, threshold = 0.25) {
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
         io.unobserve(e.target);
         fn(e.target);
       }
-    }
-  }, opts);
+    },
+    { threshold, rootMargin: "0px 0px -8% 0px" }
+  );
   io.observe(el);
 }
 
-/* A rubber stamp hitting the page: oversized, slams down, settles. */
-function stampIn(el, delay = 0) {
-  const r = getComputedStyle(el).getPropertyValue("--r").trim() || "0deg";
-  el.classList.add("is-stamped");
-  if (reduced) return;
-  el.animate(
-    [
-      { opacity: 0, transform: `rotate(${r}) scale(1.9)`, filter: "blur(3px)" },
-      { opacity: 1, transform: `rotate(${r}) scale(0.9)`, filter: "blur(0)", offset: 0.55 },
-      { opacity: 1, transform: `rotate(${r}) scale(1.03)`, offset: 0.8 },
-      { opacity: 1, transform: `rotate(${r}) scale(1)` },
-    ],
-    { duration: 520, delay, easing: "cubic-bezier(0.5, 0, 0.2, 1)", fill: "backwards" }
-  );
+const RESTING = { opacity: "1", transform: "none", clipPath: "inset(0 0 0 0)" };
+
+// Animate from a start state to the element's resting state, then pin that state inline
+// so the hidden start styles in CSS no longer apply.
+function play(el, from, opts = {}) {
+  if (reduced || !el) return;
+  const to = Object.fromEntries(Object.keys(from).map((k) => [k, RESTING[k]]));
+  const anim = el.animate([from, to], { duration: 900, easing: EASE, fill: "both", ...opts });
+  anim.finished
+    .then(() => {
+      Object.assign(el.style, to);
+      anim.cancel();
+    })
+    .catch(() => {});
 }
 
-/* ---------- Hero: write the heading, circle the line, stamp it ---------- */
-(async function hero() {
-  const sheet = $(".sheet--hero");
-  const photo = $(".idphoto");
-  const circle = $(".hero__title .pen");
-  const stamp = $(".stamp--hero");
-  const pencil = $(".pencil");
-  if (reduced) {
-    photo.classList.add("is-in");
-    stamp.classList.add("is-stamped");
-    return;
-  }
-  await Promise.race([document.fonts.ready, wait(600)]);
-  sheet.classList.add("is-written");
+/* ---------- Letter date and Cebu clock ---------- */
+const cebu = { timeZone: "Asia/Manila" };
+$("[data-today]").textContent = new Intl.DateTimeFormat("en-GB", { ...cebu, day: "numeric", month: "long", year: "numeric" }).format(new Date());
+const clock = $("[data-clock]");
+function tickClock() {
+  const t = new Intl.DateTimeFormat("en-US", { ...cebu, hour: "numeric", minute: "2-digit" }).format(new Date());
+  clock.textContent = `${t} local time`;
+}
+tickClock();
+setInterval(tickClock, 30_000);
 
-  pencil.animate(
-    [{ transform: "translate(40%, -30%) rotate(-80deg)", opacity: 0 }],
-    { duration: 1100, easing: OUT, fill: "backwards", delay: 100 }
+/* ---------- Opening: the letter assembles itself ---------- */
+(async function opening() {
+  if (reduced) return;
+  await Promise.race([document.fonts.ready, wait(700)]);
+
+  play($(".letterhead__rule"), { transform: "scaleX(0)" }, { duration: 1100 });
+  $(".seal").animate(
+    [
+      { transform: "scale(1.35) rotate(-25deg)", opacity: 0 },
+      { transform: "scale(0.94) rotate(0deg)", opacity: 1, offset: 0.7 },
+      { transform: "scale(1)", opacity: 1 },
+    ],
+    { duration: 700, delay: 150, easing: EASE, fill: "backwards" }
   );
 
-  setTimeout(() => {
-    photo.classList.add("is-in");
-    photo.animate(
-      [
-        { transform: "translateY(-60px) rotate(-14deg)", opacity: 0 },
-        { transform: "translateY(0) rotate(7deg)", opacity: 1, offset: 0.6 },
-        { transform: "rotate(1.5deg)", offset: 0.82 },
-        { transform: "rotate(3deg)" },
-      ],
-      { duration: 900, easing: "ease-out" }
-    );
-  }, 450);
+  const [meta, re, salutation, ...afterHeadline] = $$(".opening__letter > [data-rise]");
+  [meta, re, salutation].forEach((el, i) => play(el, { opacity: 0, transform: "translateY(14px)" }, { delay: 250 + i * 110 }));
 
-  setTimeout(() => circle.classList.add("is-drawn"), 1050);
+  $$(".headline .line > span").forEach((span, i) =>
+    play(span, { transform: "translateY(110%)" }, { duration: 1100, delay: 520 + i * 110 })
+  );
+  afterHeadline.forEach((el, i) => play(el, { opacity: 0, transform: "translateY(16px)" }, { delay: 950 + i * 130 }));
 
-  setTimeout(() => {
-    stampIn(stamp);
-    // the sheet takes the hit
-    sheet.animate(
-      [
-        { transform: "rotate(-1.2deg)" },
-        { transform: "rotate(-1.2deg) translateY(4px) scale(0.995)", offset: 0.3 },
-        { transform: "rotate(-1.2deg)" },
-      ],
-      { duration: 380, delay: 220, easing: OUT }
-    );
-  }, 1900);
+  const mounted = $("[data-mounted]");
+  play($(".mounted__photo", mounted), { clipPath: "inset(100% 0 0 0)" }, { duration: 1300, delay: 600, easing: "cubic-bezier(0.7, 0, 0.2, 1)" });
+  $$(".corner", mounted).forEach((c, i) => play(c, { opacity: 0, transform: "scale(0.4)" }, { duration: 500, delay: 1600 + i * 70 }));
+  play($("figcaption", mounted), { opacity: 0, transform: "translateY(8px)" }, { delay: 1800 });
+
+  $$("[data-facts] > div").forEach((d, i) => play(d, { opacity: 0, transform: "translateY(18px)" }, { delay: 1100 + i * 90 }));
 })();
 
-/* ---------- About: highlighter follows the scroll ---------- */
-const highlights = $$(".hl");
-const notes = $$(".about__notes .note");
-notes.forEach((note) => {
-  onceInView(note, (el) => {
-    el.classList.add("is-in");
-    if (reduced) return;
-    const r = getComputedStyle(el).getPropertyValue("--r").trim();
-    const i = notes.indexOf(el);
-    el.animate(
-      [
-        { opacity: 0, transform: `translateY(40px) rotate(calc(${r} + 8deg))` },
-        { opacity: 1, transform: `rotate(${r})` },
-      ],
-      { duration: 700, delay: i * 110, easing: SPRING, fill: "backwards" }
-    );
-  });
+/* ---------- Section headings rise out of their baseline ---------- */
+$$("[data-reveal]").forEach((h) => {
+  const inner = document.createElement("span");
+  inner.className = "rv";
+  inner.append(...h.childNodes);
+  h.append(inner);
+  onceInView(h, () => play(inner, { transform: "translateY(110%)" }, { duration: 1000 }), 0.6);
 });
 
-/* ---------- Experience: a top-bound pad that flips as you scroll ---------- */
-const exp = $("#experience");
-const sheets = $$("[data-sheet]", exp);
-const expLinks = $$("[data-exp-link]", exp);
-const pinQuery = matchMedia("(min-width: 900px)");
-const tilts = [0, 0.8, -0.6];
-const FLIP_SPAN = sheets.length - 1 + 0.4; // flips mapped across the pinned scroll
-let pinned = false;
+$$("[data-rise]")
+  .filter((el) => !el.closest(".opening"))
+  .forEach((el) => onceInView(el, () => play(el, { opacity: 0, transform: "translateY(16px)" }, { delay: 150 })));
 
-function setPinned() {
-  pinned = pinQuery.matches && !reduced;
-  exp.classList.toggle("is-pinnable", pinned);
-  if (!pinned) sheets.forEach((s) => (s.style.transform = s.style.opacity = s.style.visibility = ""));
+/* ---------- Experience: the timeline inks down as you read ---------- */
+const timeline = $("[data-timeline]");
+const ink = $("[data-ink]");
+const roles = $$("[data-role]");
+roles.forEach((role) => onceInView(role, () => play(role, { opacity: 0, transform: "translateY(28px)" }), 0.2));
+
+function inkTimeline() {
+  const rect = timeline.getBoundingClientRect();
+  const mark = innerHeight * 0.6;
+  ink.style.setProperty("--ink-progress", reduced ? 1 : clamp((mark - rect.top) / rect.height));
+  for (const role of roles) role.classList.toggle("is-active", role.getBoundingClientRect().top < mark);
 }
 
-function expProgress() {
-  const rect = exp.getBoundingClientRect();
-  const total = exp.offsetHeight - innerHeight;
-  return clamp(-rect.top / total) * FLIP_SPAN - 0.2;
-}
-
-function renderPad() {
-  if (!pinned) return;
-  const flips = expProgress();
-  let current = 0;
-  sheets.forEach((sheet, i) => {
-    if (i === sheets.length - 1) {
-      sheet.style.transform = `rotate(${tilts[i]}deg)`;
-      return;
-    }
-    const f = clamp(flips - i);
-    const e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
-    sheet.style.transform = `rotate(${tilts[i] * (1 - e)}deg) translateY(${-e * 30}px) rotateX(${-e * 118}deg)`;
-    sheet.style.opacity = String(1 - clamp((f - 0.5) / 0.35));
-    sheet.style.visibility = f >= 0.99 ? "hidden" : "";
-    if (f > 0.5) current = i + 1;
-  });
-  setCurrentJob(current);
-}
-
-function setCurrentJob(i) {
-  expLinks.forEach((a, j) => a.setAttribute("aria-current", String(i === j)));
-  sheets[i]?.classList.add("is-drawn");
-}
-
-expLinks.forEach((a, i) =>
-  a.addEventListener("click", (ev) => {
-    if (!pinned) return;
-    ev.preventDefault();
-    const total = exp.offsetHeight - innerHeight;
-    const target = exp.offsetTop + ((i + 0.2 + 0.08) / FLIP_SPAN) * total;
-    scrollTo({ top: target, behavior: "smooth" });
-  })
+/* ---------- Skills: groups settle in sequence ---------- */
+onceInView($("[data-skills]"), (set) =>
+  $$("section", set).forEach((s, i) => play(s, { opacity: 0, transform: "translateY(20px)" }, { delay: i * 80 }))
 );
 
-sheets.forEach((s) => onceInView(s, (el) => !pinned && el.classList.add("is-drawn"), { threshold: 0.5 }));
+/* ---------- Closing: the signature writes itself ---------- */
+onceInView(
+  $("[data-signoff]"),
+  (signoff) => play($(".signature span", signoff), { clipPath: "inset(-20% 100% -20% 0)" }, { duration: 1800, delay: 300, easing: "cubic-bezier(0.45, 0, 0.25, 1)" }),
+  0.6
+);
 
-// While the pad is on screen, follow the scroll every frame so the flip never lags.
-let padLoop = 0;
-new IntersectionObserver(([entry]) => {
-  cancelAnimationFrame(padLoop);
-  if (!entry.isIntersecting) return;
-  const tick = () => {
-    renderPad();
-    padLoop = requestAnimationFrame(tick);
-  };
-  tick();
-}).observe(exp);
-
-setPinned();
-pinQuery.addEventListener("change", () => {
-  setPinned();
-  renderPad();
-});
-
-/* ---------- Scroll loop (highlighter + pad) ---------- */
+/* ---------- Letterhead condenses; current section underlined ---------- */
+const letterhead = $("[data-letterhead]");
 function onScroll() {
-  if (!reduced) {
-    const vh = innerHeight;
-    for (const hl of highlights) {
-      const top = hl.getBoundingClientRect().top;
-      hl.style.setProperty("--hl", `${clamp((vh * 0.8 - top) / (vh * 0.25)) * 100}%`);
-    }
-  }
+  letterhead.classList.toggle("is-condensed", scrollY > 40);
+  inkTimeline();
 }
 addEventListener("scroll", onScroll, { passive: true });
 addEventListener("resize", onScroll);
 onScroll();
+
+const menuLinks = $$("[data-menu] a");
+const sectionIO = new IntersectionObserver(
+  (entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      menuLinks.forEach((a) => a.setAttribute("aria-current", String(a.hash === `#${e.target.id}`)));
+    }
+  },
+  { rootMargin: "-45% 0px -50% 0px" }
+);
+$$("main > section").forEach((s) => sectionIO.observe(s));
 
 /* ---------- How I write: a conversation that types itself ---------- */
 const convos = {
   support: {
     title: "Shop inbox",
     sub: "Replying as Charena",
+    status: "Order noted",
     msgs: [
       ["them", "Hi! Is the medium size still available? And how long is shipping to Davao?"],
       ["me", "Hi! Yes, medium is in stock in all three colors. Shipping to Davao usually takes 3 to 5 days. Want me to hold one while you pick a color?"],
@@ -217,6 +162,7 @@ const convos = {
   esl: {
     title: "English class · Level 2",
     sub: "Teaching as Teacher Charena",
+    status: "Lesson goal met",
     msgs: [
       ["them", "Teacher, yesterday I go to the park with my mom."],
       ["me", "Great story! One small fix: yesterday I went to the park. “Go” changes to “went” when it already happened. Can you try the whole sentence again?"],
@@ -226,23 +172,11 @@ const convos = {
   },
 };
 const chat = $("[data-chat]");
-const panel = $("#chat-panel");
-const convoTabs = $$("[data-convo]");
+const panel = $("[data-thread]");
+const segmented = $(".segmented");
+const convoTabs = $$("[data-convo]", segmented);
 let playId = 0;
-let currentConvo = "support";
-
-const checkSvg = () => {
-  const ns = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("viewBox", "0 0 60 50");
-  svg.setAttribute("class", "pen msg__check");
-  svg.setAttribute("aria-hidden", "true");
-  const p = document.createElementNS(ns, "path");
-  p.setAttribute("pathLength", "1");
-  p.setAttribute("d", "M6 26l16 16L54 6");
-  svg.append(p);
-  return svg;
-};
+let current = "support";
 
 function bubble(who, text) {
   const li = document.createElement("li");
@@ -251,7 +185,15 @@ function bubble(who, text) {
   return li;
 }
 
-async function play(key) {
+function status(text) {
+  const li = document.createElement("li");
+  li.className = "msg__status";
+  li.innerHTML = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>';
+  li.append(text);
+  return li;
+}
+
+async function playConvo(key) {
   const id = ++playId;
   const convo = convos[key];
   $("[data-convo-title]").textContent = convo.title;
@@ -260,98 +202,49 @@ async function play(key) {
 
   if (reduced) {
     convo.msgs.forEach(([who, text]) => chat.append(bubble(who, text)));
-    chat.lastElementChild.append(checkSvg());
+    chat.append(status(convo.status));
     return;
   }
 
   panel.setAttribute("aria-busy", "true");
-  for (const [i, [who, text]] of convo.msgs.entries()) {
+  for (const [who, text] of convo.msgs) {
     const typing = document.createElement("li");
     typing.className = `typing${who === "me" ? " typing--me" : ""}`;
     typing.setAttribute("aria-hidden", "true");
     typing.innerHTML = "<i></i><i></i><i></i>";
     chat.append(typing);
-    await wait(who === "me" ? clamp(text.length * 14, 700, 1500) : 650);
+    await wait(who === "me" ? clamp(text.length * 13, 700, 1400) : 650);
     if (id !== playId) return;
     const li = bubble(who, text);
     typing.replaceWith(li);
     li.animate(
       [
-        { opacity: 0, transform: "scale(0.6) translateY(12px)" },
-        { opacity: 1, transform: "scale(1)" },
+        { opacity: 0, transform: "translateY(10px) scale(0.96)" },
+        { opacity: 1, transform: "none" },
       ],
-      { duration: 420, easing: SPRING }
+      { duration: 450, easing: EASE }
     );
-    if (i === convo.msgs.length - 1) {
-      const check = checkSvg();
-      li.append(check);
-      await wait(300);
-      if (id !== playId) return;
-      check.classList.add("is-drawn");
-    }
-    await wait(who === "them" ? 450 : 700);
+    await wait(who === "them" ? 450 : 650);
     if (id !== playId) return;
   }
+  const done = status(convo.status);
+  chat.append(done);
+  done.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400, easing: EASE });
   panel.removeAttribute("aria-busy");
 }
 
-convoTabs.forEach((tab) =>
+convoTabs.forEach((tab, i) =>
   tab.addEventListener("click", () => {
-    currentConvo = tab.dataset.convo;
+    if (current === tab.dataset.convo) return;
+    current = tab.dataset.convo;
+    segmented.dataset.active = String(i);
     convoTabs.forEach((t) => t.setAttribute("aria-selected", String(t === tab)));
     panel.setAttribute("aria-labelledby", tab.id);
-    play(currentConvo);
+    playConvo(current);
   })
 );
-$("[data-replay]").addEventListener("click", () => play(currentConvo));
-onceInView(panel, () => play(currentConvo), { threshold: 0.45 });
-
-/* ---------- Skills: the red pen checks every box ---------- */
-$$(".check-group").forEach((group) => {
-  $$("li", group).forEach((li, i) => {
-    const ns = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(ns, "svg");
-    svg.setAttribute("viewBox", "0 0 30 26");
-    svg.setAttribute("class", "tick");
-    svg.setAttribute("aria-hidden", "true");
-    svg.style.setProperty("--d", `${i * 0.08}s`);
-    const p = document.createElementNS(ns, "path");
-    p.setAttribute("pathLength", "1");
-    p.setAttribute("d", "M3 14l8 8L28 2");
-    svg.append(p);
-    li.prepend(svg);
-  });
-  onceInView(group, (el) => el.classList.add("is-drawn"), { threshold: 0.5 });
-});
-
-/* ---------- Qualifications: every stamp lands on one beat ---------- */
-const stampList = $("[data-stamps]");
-onceInView(stampList, (list) => {
-  const stamps = $$(".stamp", list);
-  stamps.forEach((s, i) => stampIn(s, i * 55));
-  if (!reduced) {
-    list.animate(
-      [{ transform: "none" }, { transform: "translateY(3px)", offset: 0.6 }, { transform: "none" }],
-      { duration: 700, easing: OUT }
-    );
-  }
-});
-
-/* ---------- Contact: underline + gold star sticker ---------- */
-onceInView($(".sheet--note"), (note) => {
-  $(".pen--under", note).classList.add("is-drawn");
-  const star = $(".star", note);
-  star.classList.add("is-stamped");
-  if (reduced) return;
-  star.animate(
-    [
-      { opacity: 0, transform: "rotate(-60deg) scale(0.2)" },
-      { opacity: 1, transform: "rotate(20deg) scale(1.15)", offset: 0.65 },
-      { opacity: 1, transform: "rotate(12deg) scale(1)" },
-    ],
-    { duration: 700, delay: 500, easing: OUT, fill: "backwards" }
-  );
-});
+$("[data-replay]").addEventListener("click", () => playConvo(current));
+onceInView(panel, () => playConvo(current), 0.45);
 
 /* ---------- Copy email ---------- */
 $$("[data-copy]").forEach((btn) => {
@@ -359,7 +252,7 @@ $$("[data-copy]").forEach((btn) => {
   btn.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(btn.dataset.copy);
-      label.textContent = "Copied!";
+      label.textContent = "Copied";
     } catch {
       label.textContent = "Press Ctrl+C";
       const range = document.createRange();
@@ -375,17 +268,3 @@ $$("[data-copy]").forEach((btn) => {
     }, 1800);
   });
 });
-
-/* ---------- Nav: the tab for the section you're reading drops down ---------- */
-const tabs = $$(".nav__tabs .tab");
-const sectionIO = new IntersectionObserver(
-  (entries) => {
-    for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      const id = e.target.id === "education" ? "skills" : e.target.id;
-      tabs.forEach((t) => t.setAttribute("aria-current", String(t.hash === `#${id}`)));
-    }
-  },
-  { rootMargin: "-45% 0px -50% 0px" }
-);
-$$("main > section").forEach((s) => sectionIO.observe(s));

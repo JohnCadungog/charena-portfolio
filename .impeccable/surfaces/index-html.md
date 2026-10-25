@@ -9,18 +9,19 @@ related_targets: []
 
 Mode: Experience. Single page. Audience: remote VA/chat-support clients and online ESL employers, equally.
 Action: email Charena, open LinkedIn, or download the resume PDF. Proof: resume facts only; sample messages are labeled examples.
-Constraint: no photo yet; a 2x2 ID-photo slot (Filipino resume convention) holds initials until one arrives.
+Constraint: no photo yet; a mounted-photo slot holds her monogram until one arrives.
+History: replaced the "pad paper & red pen" world at the user's request for a more professional look (safer register re-roll).
 
 ## Direction contract
 
-THESIS: Her work is written communication done neatly and checked twice, so the page is a Filipino student's yellow pad paper being written on and graded in red pen. It refuses the category default: white page, round headshot, blue accent, rows of equal skill cards.
+THESIS: She is a writer-first professional, so the page is a well-made business letter from Charena to the person hiring: letterhead, date, salutation, body, enclosures, signature, P.S. It refuses the category default of a photo hero over a grid of service cards.
 
-OWN-WORLD: Strict six-ink ramp: Mongol-pencil yellow and ballpen blue own whole sections as fields; pad-paper sheets (pale newsprint, ruling blue lines, one red margin rule) sit on them as objects with fibre grain; red-pen marks (circles, checks, underlines) and gold star stickers are the only ornament; graphite text. Bricolage Grotesque heavy display, Atkinson Hyperlegible body, Kalam for handwriting and red-pen notes. Buttons are rubber stamps that squash on press.
+OWN-WORLD: Cool white laid stationery (fine laid and chain lines) carrying deep navy ink; one emerald accent reserved for the monogram seal, the signature, and links; a navy envelope-liner field with a fine repeating pattern closes the page. Schibsted Grotesk for letterhead and headlines, Source Serif 4 for letter body text, Mrs Saint Delafield only for the signature. Hairline rules, tabular dates, photo corners on the mounted photo.
 
-STORY: Within one viewport the visitor knows who she is, the three roles she fills, that she is remote-ready from Cebu, and how to reach her. Scrolling, they read how she writes (sample exchanges), what she did, what she can do, and they email her.
+STORY: Within one viewport the visitor sees who is writing, the roles she fills, that she works remotely from Cebu, and how to reply. Scrolling, they read how she writes, the enclosed record of her work and skills, and the signed close, then they email her.
 
-FIRST VIEWPORT: Mongol-yellow field. A large pad sheet, rotated about -1.5deg, fills ~60% width: the classic paper heading (Name / Subject / Date / Location) handwritten on its ruled lines, then the display headline across the lines. 2x2 ID-photo slot paper-clipped top-right of the sheet. A red stamp "Remote-ready" lands at the end of the writing sequence. Primary stamp button "Email Charena" plus "Download resume" sit on the sheet's lower lines. A Mongol pencil lies beside the sheet. Nav is notebook index tabs along the top.
+FIRST VIEWPORT: Letterhead across the top (seal monogram, name, roles, contact line, section links). Below, a two-column letter opening: left, live date in Cebu time, "Re:" line, salutation, a large Schibsted headline as the letter's first sentence, a short serif paragraph, then "Email Charena" and "Download resume"; right, the mounted photo slot with corners and a caption.
 
-FORM: Pad paper and red pen, candidate 5 of 7 on the ordered list; seed key 90481f3e. Raises: strict six-ink ramp with tabular dates (from darkroom exposure record); springs with mass that land together on one beat (from VU meter bridge); stamp squash with residual settle on press (from rubber-hose cel). Signature interaction: grading as you read; the red pen writes its marks in as each sheet arrives, and the experience pad flips its sheets as you scroll.
+FORM: Letterhead & correspondence, from the safer re-roll of seed key 90481f3e. Signature interaction: the letter assembles itself on load (rules draw, seal presses, lines rise from their baselines), the enclosure timeline inks down as you scroll, and the signature writes itself at the close.
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
