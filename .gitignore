@@ -3,3 +3,6 @@ dist
 .vercel
 .impeccable/review
 .impeccable/live
+
+.vercel
+.env*
